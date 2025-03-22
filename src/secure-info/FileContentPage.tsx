@@ -1,16 +1,29 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom'; 
 import { decryptWithFixedIV, encryptWithFixedIV, splitter } from './ManageCrypto';
+import { secureInfoModel } from "../models/SecureInfoModel";
 
 function FileContentPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const { fileName, fileContent } = location.state || {};
-  const [saltKey, setSaltKey] = useState('');
   const [isPopupVisible, setIsPopupVisible] = useState(true);
   const [error, setError] = useState('');
   let [decryptedContent, setDecryptedContent] = useState<{ key: string; value: string }[]>([]);
+  const [saltKey, setSaltKey] = useState<string>(''); // Use the singleton saltKey
+  const [iv, setIv] = useState<string>(secureInfoModel.iv);
+
+  const manageSaltKeyAndIv = (e : React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      const newVal = val.split('').reverse().join('');
+      const ivStr = newVal+newVal;
+      
+      setSaltKey(val);
+      
+      setIv(ivStr);
+      secureInfoModel.iv = ivStr;  
+    }
 
   const extractSaltKey = (content: string) => {
     const lines = content.split('\n');
@@ -19,16 +32,14 @@ function FileContentPage() {
   };
 
   const decryptFileContent = (content: string, saltKey: string) => {
-    const ivString = '0000000000000000'; 
+    const ivString = iv; 
     const lines = content.split('\n');
     let decryptedContent = [];
 
-    // Iterate over the lines and decrypt them (excluding the last line which is the encrypted salt key)
     for (let i = 0; i < lines.length - 1; i++) {
       const decryptedLine = decryptWithFixedIV(lines[i], saltKey, ivString);
       
-      // Assuming that the decrypted line will be in the format "key:value"
-      const [key, value] = decryptedLine.split(splitter); // Adjust this if your key-value separator is different
+      const [key, value] = decryptedLine.split(splitter);
 
       if (key && value) {
         decryptedContent.push({ key: key.trim(), value: value.trim() });
@@ -38,7 +49,6 @@ function FileContentPage() {
     return decryptedContent;
   };
 
-  // Handle submit for salt key and password
   const handleSubmit = () => {
     if (!saltKey) {
       setError('Please provide a password.');
@@ -52,21 +62,20 @@ function FileContentPage() {
 
     const lastLine = extractSaltKey(fileContent);
 
-    const encryptedSaltKey = encryptWithFixedIV(saltKey, saltKey, '0000000000000000'); // Encrypt the provided salt key to validate
+    const encryptedSaltKey = encryptWithFixedIV(saltKey, saltKey, iv);
 
     if (encryptedSaltKey === lastLine) {
       setError('');
-      // Decrypt the file content after password is validated
       const decrypted = decryptFileContent(fileContent, saltKey);
-      setDecryptedContent(decrypted); // Set the decrypted content (an array of { key, value })
-      setIsPopupVisible(false); // Hide the password prompt
+      setDecryptedContent(decrypted);
+      setIsPopupVisible(false);
     } else {
       setError('Invalid password. Please try again.');
     }
   };
 
   const handleBack = () => {
-    navigate('/'); // Navigate back to the previous page
+    navigate('/');
   };
 
   return (
@@ -78,10 +87,10 @@ function FileContentPage() {
             type="password"
             placeholder="Password"
             value={saltKey}
-            onChange={(e) => setSaltKey(e.target.value)} // Update the salt key state on input change
+            onChange={(e) => manageSaltKeyAndIv(e)}
           />
           <button onClick={handleSubmit}>Submit</button>
-          {error && <p className="error">{error}</p>} {/* Display error if password is invalid */}
+          {error && <p className="error">{error}</p>}
         </div>
       )}
 
@@ -101,10 +110,10 @@ function FileContentPage() {
             </div>
           ) : (
             <div>
-              <p>No decrypted content available. Please check the password or file content.</p> {/* More descriptive message */}
+              <p>No decrypted content available. Please check the password or file content.</p>
             </div>
           )}
-          <button onClick={handleBack}>Back</button> {/* Button to go back to the previous page */}
+          <button onClick={handleBack}>Back</button>
         </div>
       )}
     </div>
