@@ -11,7 +11,7 @@ function FileContentPage() {
   const [isPopupVisible, setIsPopupVisible] = useState(true);
   const [error, setError] = useState('');
   let [decryptedContent, setDecryptedContent] = useState<{ key: string; value: string }[]>([]);
-  const [saltKey, setSaltKey] = useState<string>(''); // Use the singleton saltKey
+  const [saltKey, setSaltKey] = useState<string>(''); 
   const [iv, setIv] = useState<string>(secureInfoModel.iv);
 
   const manageSaltKeyAndIv = (e : React.ChangeEvent<HTMLInputElement>) => {

@@ -2,7 +2,7 @@
  display: flex;
  justify-content: space-evenly;
  align-items: center;
- height: 90vh;
+ height: 77vh;
 }
 
 #createbtn, #uploadMain{
