@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 function Navbar() {
   return (
-    <nav className="navbar navbar-expand-lg main-color">
+    <nav className="navbar navbar-expand-lg main-color" style={{position:'sticky', top: 0}}>
       <div className="container-fluid main-color">
         <Link className="navbar-brand main-color cursive-font" to="/">
           Secure Info
