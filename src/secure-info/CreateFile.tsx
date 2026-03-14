@@ -79,6 +79,19 @@ function CreateFile() {
   };
 
   const confirmPopUp = () => {
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+  
+      const isValidKey = row.key && row.key.trim() !== '';
+      const isValidValue = row.value && row.value.trim() !== '';
+  
+      if (!isValidKey || !isValidValue) {
+        alert('Please fill All available rows.');
+        return;
+      } 
+    }
+
     setShowModal(true);
   };
 
@@ -232,7 +245,7 @@ function CreateFile() {
                 style={{ textAlign: "start" ,width:'100%', height: '8vh'}}
               />
             <div style={{display: "flex", justifyContent: "space-evenly"}}>
-            <button className="filledcolorbtn cursive-font" onClick={exportData}>Export</button>
+            <button className="filledcolorbtn cursive-font" onClick={exportData}>Download</button>
             <button className="bordercolorbtn cursive-font" onClick={() => setShowModal(false)}>Cancel</button>
             </div>
           </div>
