@@ -1,6 +1,5 @@
 {
   "name": "secure-info",
-  "homepage": "https://yogeshdvish.github.io/SecureInfo",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
