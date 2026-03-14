@@ -1,121 +1,170 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; 
-import { decryptWithFixedIV, encryptWithFixedIV, splitter } from './ManageCrypto';
-import { secureInfoModel } from "../models/SecureInfoModel";
+import React, { useState, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { decryptWithFixedIV, splitter, extractFromPngAsync } from './ManageCrypto';
+import '../styles/FileContentPage.css';
+import '../Global.css';
+import { ReactComponent as SinfoLogo } from '../assets/logo.svg';
 
 function FileContentPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { fileName, fileContent } = location.state || {};
+  const [currentFileName, setCurrentFileName] = useState<string>(location.state?.fileName || '');
+  const [currentFileBuffer, setCurrentFileBuffer] = useState<ArrayBuffer | null>(location.state?.fileBuffer || null);
+
   const [isPopupVisible, setIsPopupVisible] = useState(true);
   const [error, setError] = useState('');
-  let [decryptedContent, setDecryptedContent] = useState<{ key: string; value: string }[]>([]);
-  const [saltKey, setSaltKey] = useState<string>(''); 
-  const [iv, setIv] = useState<string>(secureInfoModel.iv);
+  const [decryptedContent, setDecryptedContent] = useState<{ key: string; value: string }[]>([]);
+  const [saltKey, setSaltKey] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const manageSaltKeyAndIv = (e : React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      const newVal = val.split('').reverse().join('');
-      const ivStr = newVal+newVal;
-      
-      setSaltKey(val);
-      
-      setIv(ivStr);
-      secureInfoModel.iv = ivStr;  
+  const isSinfoFile = (name: string) => name.toLowerCase().endsWith('.sinfo');
+
+  const getPayload = async (): Promise<string> => {
+    if (!isSinfoFile(currentFileName) || !currentFileBuffer) {
+      setError('Invalid file. Please upload a .sinfo file.');
+      return '';
     }
-
-  const extractSaltKey = (content: string) => {
-    const lines = content.split('\n');
-    const lastLine = lines[lines.length - 1];
-    return lastLine;
+    return await extractFromPngAsync(currentFileBuffer);
   };
 
-  const decryptFileContent = (content: string, saltKey: string) => {
-    const ivString = iv; 
-    const lines = content.split('\n');
-    let decryptedContent = [];
+  const decryptFileContent = async (
+    payload: string,
+    password: string
+  ): Promise<{ key: string; value: string }[]> => {
+    const lines = payload.split('\n').filter((l) => l.trim() !== '');
+    const dataLines = lines.slice(0, lines.length - 1);
+    const results: { key: string; value: string }[] = [];
+    for (const line of dataLines) {
+      const decrypted = await decryptWithFixedIV(line, password);
+      if (!decrypted) continue;
+      const [key, value] = decrypted.split(splitter);
+      if (key && value) results.push({ key: key.trim(), value: value.trim() });
+    }
+    return results;
+  };
 
-    for (let i = 0; i < lines.length - 1; i++) {
-      const decryptedLine = decryptWithFixedIV(lines[i], saltKey, ivString);
-      
-      const [key, value] = decryptedLine.split(splitter);
-
-      if (key && value) {
-        decryptedContent.push({ key: key.trim(), value: value.trim() });
+  const handleSubmit = async () => {
+    if (!saltKey) { setError('Please provide a password.'); return; }
+    setIsLoading(true);
+    setError('');
+    try {
+      const payload = await getPayload();
+      if (!payload) { setIsLoading(false); return; }
+      const lines = payload.split('\n').filter((l: string) => l.trim() !== '');
+      const verificationToken = lines[lines.length - 1];
+      const decryptedToken = await decryptWithFixedIV(verificationToken, saltKey);
+      if (decryptedToken === saltKey) {
+        const decrypted = await decryptFileContent(payload, saltKey);
+        setDecryptedContent(decrypted);
+        setIsPopupVisible(false);
+      } else {
+        setError('Invalid password. Please try again.');
       }
+    } catch {
+      setError('Invalid password or corrupted file.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    return decryptedContent;
   };
 
-  const handleSubmit = () => {
-    if (!saltKey) {
-      setError('Please provide a password.');
-      return;
-    }
+  const handleSelectAnother = () => {
+    if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click(); }
+  };
 
-    if (!fileContent) {
-      setError('No file content to process.');
-      return;
-    }
-
-    const lastLine = extractSaltKey(fileContent);
-
-    const encryptedSaltKey = encryptWithFixedIV(saltKey, saltKey, iv);
-
-    if (encryptedSaltKey === lastLine) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!isSinfoFile(file.name)) { setError('Invalid file type. Please upload a .sinfo file.'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCurrentFileName(file.name);
+      setCurrentFileBuffer(ev.target?.result as ArrayBuffer);
+      setSaltKey('');
       setError('');
-      const decrypted = decryptFileContent(fileContent, saltKey);
-      setDecryptedContent(decrypted);
-      setIsPopupVisible(false);
-    } else {
-      setError('Invalid password. Please try again.');
-    }
+      setDecryptedContent([]);
+      setIsPopupVisible(true);
+    };
+    reader.readAsArrayBuffer(file);
   };
 
-  const handleBack = () => {
-    navigate('/');
+  const handleBack = () => navigate('/');
+
+  // ── Edit — pass saltKey so CreateFile can use old password ───────────────
+  const handleEdit = () => {
+    const filenameWithoutExt = currentFileName.replace(/\.sinfo$/i, '');
+    navigate('/create-file', {
+      state: {
+        editRows: decryptedContent,
+        editFilename: filenameWithoutExt,
+        editPassword: saltKey,       // carry old password
+      }
+    });
   };
 
   return (
     <div id="fileContentPage">
+
+      <input ref={fileInputRef} type="file" accept=".sinfo" style={{ display: 'none' }} onChange={handleFileChange} />
+
+      {/* ── Password popup ── */}
       {isPopupVisible && (
         <div className="popup">
-          <h3>Enter Password</h3>
+          <div className="popup-filename cursive-font">
+            <SinfoLogo className="sinfo-icon" />
+            <span title={currentFileName}>{currentFileName}</span>
+          </div>
+          <h3 className="cursive-font">Enter Password</h3>
           <input
+            className="bordercolorbtn cursive-font"
             type="password"
             placeholder="Password"
             value={saltKey}
-            onChange={(e) => manageSaltKeyAndIv(e)}
+            onChange={(e) => setSaltKey(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           />
-          <button onClick={handleSubmit}>Submit</button>
+          <div className="popup-actions">
+            <button className="filledcolorbtn cursive-font" onClick={handleSubmit} disabled={isLoading}>
+              {isLoading ? 'Decrypting...' : 'Submit'}
+            </button>
+            <button className="bordercolorbtn cursive-font" onClick={handleSelectAnother} disabled={isLoading}>
+              Select Another File
+            </button>
+          </div>
           {error && <p className="error">{error}</p>}
         </div>
       )}
 
+      {/* ── Decrypted content ── */}
       {!isPopupVisible && (
-        <div>
-          <h3>File Content</h3>
-          <h4>File Name: {fileName}</h4>
+        <div id="file-content">
+
+          {/* ── Top bar: filename + buttons ── */}
+          <div id="file-content-topbar">
+            <h4 className="cursive-font"><SinfoLogo className="sinfo-icon" /> {currentFileName}</h4>
+            <div id="file-content-actions">
+              <button className="filledcolorbtn cursive-font" onClick={handleEdit}>✏️ Edit</button>
+              <button className="bordercolorbtn cursive-font" onClick={handleSelectAnother}>📂 Select Another</button>
+              <button className="bordercolorbtn cursive-font" onClick={handleBack}>← Back</button>
+            </div>
+          </div>
+
           {decryptedContent.length > 0 ? (
-            <div>
-              <ul>
-                {decryptedContent.map((item, index) => (
-                  <li key={index}>
-                    <strong>{item.key},  {item.value} </strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ul>
+              {decryptedContent.map((item, index) => (
+                <li key={index}>
+                  <strong>{item.key}</strong>
+                  <span>{item.value}</span>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <div>
-              <p>No decrypted content available. Please check the password or file content.</p>
-            </div>
+            <p>No decrypted content available.</p>
           )}
-          <button onClick={handleBack}>Back</button>
         </div>
       )}
+
     </div>
   );
 }

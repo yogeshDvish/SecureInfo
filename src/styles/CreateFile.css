@@ -34,3 +34,10 @@
     margin: 5px;
   }
   
+  /* ── Sinfo logo icon ────────────────────────────────────────────────────── */
+.sinfo-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    vertical-align: middle;
+    margin-right: 0.3rem;
+}

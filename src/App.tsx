@@ -4,6 +4,7 @@ import SecurePage from './secure-info/SecurePage';
 import CreateFile from './secure-info/CreateFile';
 import FileContentPage from './secure-info/FileContentPage';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import About from './secure-info/About';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<SecurePage />} />
             <Route path="/create-file" element={<CreateFile />} />
             <Route path="/file-content" element={<FileContentPage />} />
+            <Route path="/about" element={<About />} /> 
           </Routes>
         </div>
         {/* <Footer /> */}

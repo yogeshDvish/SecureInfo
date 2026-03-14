@@ -5,20 +5,28 @@ import { useNavigate } from 'react-router-dom';
 
 function SecurePage() {
   const navigate = useNavigate();
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleCreateFileClick = () => {
-    navigate('/create-file');
+  const handleCreateFileClick = () => navigate('/create-file');
+
+  // Reads .sinfo file as ArrayBuffer and navigates to FileContentPage
+  const navigateToFileContent = (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.sinfo')) {
+      alert('Invalid file type. Please upload a .sinfo file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      navigate('/file-content', {
+        state: { fileName: file.name, fileBuffer: e.target?.result, fileContent: '' }
+      });
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setFileName(selectedFile.name); 
-      readFile(selectedFile);
-    }
+    if (selectedFile) navigateToFileContent(selectedFile);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -26,71 +34,50 @@ function SecurePage() {
     setIsDragging(true);
   };
 
+  const handleDragLeave = () => setIsDragging(false);
+
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
     const droppedFile = event.dataTransfer.files?.[0];
-    if (droppedFile) {
-      setFileName(droppedFile.name);
-      readFile(droppedFile);
-    }
-  };
-
-  const readFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFileContent(e.target?.result as string);
-    };
-    reader.readAsText(file);
-  };
-
-  const handleShowContent = () => {
-    navigate('/file-content', {
-      state: { fileName, fileContent }
-    });
+    if (droppedFile) navigateToFileContent(droppedFile);
   };
 
   return (
     <>
       <div id="mainDiv">
+
+        {/* ── Create File button ── */}
         <div>
-          <div>
-            <button
-              className="main-color filledcolorbtn"
-              id="createbtn"
-              type="button"
-              onClick={handleCreateFileClick}
-            >
-              <span className="main-color cursive-font">Create File</span>
-            </button>
-          </div>
+          <button className="main-color filledcolorbtn cursive-font" id="createbtn" type="button" onClick={handleCreateFileClick}>
+            Create File
+          </button>
         </div>
 
-        <div>
+        {/* ── Upload area ── */}
+        <div id="uploadWrapper">
           <div
-            className={`cursive-font bordercolorbtn upload-area ${isDragging ? 'dragging' : ''}`}
+            className={`cursive-font bordercolorbtn ${isDragging ? 'dragging' : ''}`}
             id="uploadMain"
             onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => document.getElementById('fileInput')?.click()}
+            onClick={() => {
+              const input = document.getElementById('fileInput') as HTMLInputElement;
+              if (input) { input.value = ''; input.click(); }
+            }}
           >
-            <p>Drag/Drop or Upload File Here</p>
-
+            <p style={{ margin: 0 }}>Drag/Drop or Upload File Here</p>
             <input
               id="fileInput"
               type="file"
+              accept=".sinfo"
               style={{ display: 'none' }}
               onChange={handleFileSelect}
             />
           </div>
-
-          {fileName && (
-            <div className="file-name-display">
-              <h4>Selected File: {fileName}</h4>
-              <button onClick={handleShowContent}>Show Content</button>
-            </div>
-          )}
         </div>
+
       </div>
     </>
   );

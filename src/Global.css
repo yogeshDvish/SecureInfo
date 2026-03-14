@@ -49,3 +49,13 @@ body {
     text-align: center;
     margin-right: 1vw;
 }
+
+.active-link {
+    color: #000000 !important;
+    font-weight: 700;
+}
+
+.inactive-link {
+    color: #000000 !important;
+    font-weight: 400;
+}
