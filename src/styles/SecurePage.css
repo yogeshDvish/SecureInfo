@@ -1,12 +1,60 @@
-#mainDiv{
- display: flex;
- justify-content: space-evenly;
- align-items: center;
- height: 77vh;
+#mainDiv {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    height: 77vh;
 }
 
-#createbtn, #uploadMain{
+#createbtn {
     width: 25vw;
     height: 10vh;
     margin: 0;
+}
+
+/* ── Upload side — fixed column so nothing shifts ───────────────────────── */
+#uploadWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 25vw;
+}
+
+#uploadMain {
+    width: 100%;
+    height: 10vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    /* fixed — never moves regardless of content below */
+}
+
+/* ── File info shown below upload box ───────────────────────────────────── */
+.file-name-display {
+    width: 100%;
+    margin-top: 1.5vh;
+    padding: 1.2vh 1vw;
+    border-radius: .5rem;
+    border: .2rem solid #7da2a9;
+    background-color: #f7f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1vw;
+}
+
+.file-name-display h4 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #7da2a9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 14vw;
+}
+
+.file-name-display button {
+    margin: 0;
+    white-space: nowrap;
 }

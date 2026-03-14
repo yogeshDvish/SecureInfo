@@ -1,0 +1,189 @@
+#aboutPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4vh 8vw 6vh;
+    min-height: 77vh;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+#aboutHeader {
+    text-align: center;
+    margin-bottom: 3vh;
+}
+
+#aboutHeader h1 {
+    font-size: 2.4rem;
+    color: #7da2a9;
+    margin-bottom: 1vh;
+}
+
+.about-subtitle {
+    font-size: 1rem;
+    color: #888;
+    margin: 0;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────── */
+#aboutBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8vw;
+    justify-content: center;
+    margin-bottom: 4vh;
+}
+
+.about-badge {
+    padding: 0.5vh 1.2vw;
+    border-radius: 2rem;
+    border: .2rem solid #7da2a9;
+    background-color: #e8f0f1;
+    color: #7da2a9;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+/* ── Accordion ───────────────────────────────────────────────────────────── */
+#aboutAccordion {
+    width: 60vw;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2vh;
+    margin-bottom: 5vh;
+}
+
+.accordion-item {
+    border: .2rem solid #7da2a9;
+    border-radius: .8rem;
+    background-color: #f7f7f7;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.accordion-item:hover {
+    box-shadow: 0 2px 12px rgba(125, 162, 169, 0.25);
+}
+
+.accordion-item.open {
+    background-color: #f0f6f7;
+}
+
+.accordion-header {
+    display: flex;
+    align-items: center;
+    padding: 1.6vh 1.5vw;
+    gap: 1vw;
+}
+
+.accordion-icon {
+    font-size: 1.2rem;
+    min-width: 1.8rem;
+}
+
+.accordion-title {
+    flex: 1;
+    font-size: 1rem;
+    color: #2c2c2c;
+    font-weight: 600;
+}
+
+.accordion-chevron {
+    font-size: 0.7rem;
+    color: #7da2a9;
+}
+
+.accordion-body {
+    padding: 0 1.5vw 1.6vh 4vw;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.7;
+    border-top: .1rem solid #d0e0e3;
+}
+
+/* ── Author card ─────────────────────────────────────────────────────────── */
+#authorCard {
+    width: 60vw;
+    border: .2rem solid #7da2a9;
+    border-radius: 1rem;
+    background-color: #f7f7f7;
+    padding: 2.5vh 2vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2vw;
+    margin-bottom: 3vh;
+    flex-wrap: wrap;
+}
+
+#authorInfo {
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+}
+
+.author-avatar-logo {
+    width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: .2rem solid #7da2a9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #e8f0f1;
+}
+
+.author-avatar-logo svg {
+    width: 100%;
+    height: 100%;
+}
+
+.author-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c2c2c;
+    margin: 0 0 0.3vh 0;
+}
+
+.author-role {
+    font-size: 0.82rem;
+    color: #7da2a9;
+    margin: 0;
+}
+
+#authorLinks {
+    display: flex;
+    gap: 1.2vw;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.author-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+    padding: 0.6vh 1vw;
+    border-radius: .5rem;
+    border: .15rem solid #7da2a9;
+    background-color: #e8f0f1;
+    color: #7da2a9;
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+
+.author-link:hover {
+    background-color: #7da2a9;
+    color: #fff;
+}
+
+/* ── Bottom note ─────────────────────────────────────────────────────────── */
+.about-note {
+    margin-top: 1vh;
+    font-size: 0.85rem;
+    color: #aaa;
+    text-align: center;
+}

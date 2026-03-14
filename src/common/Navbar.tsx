@@ -1,10 +1,13 @@
-// src/components/Navbar.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 function Navbar() {
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <nav className="navbar navbar-expand-lg main-color" style={{position:'sticky', top: 0}}>
+    <nav className="navbar navbar-expand-lg main-color" style={{ position: 'sticky', top: 0 }}>
       <div className="container-fluid main-color">
         <Link className="navbar-brand main-color cursive-font" to="/">
           Secure Info
@@ -23,20 +26,21 @@ function Navbar() {
         <div className="collapse navbar-collapse main-color" id="navbarNav">
           <ul className="navbar-nav main-color">
             <li className="nav-item main-color">
-              <Link className="nav-link active cursive-font" aria-current="page" to="/">
+              <Link
+                className={`nav-link cursive-font ${isActive('/') ? 'active-link' : 'inactive-link'}`}
+                to="/"
+              >
                 Home
               </Link>
             </li>
             <li className="nav-item main-color">
-              <Link className="nav-link cursive-font" to="/about">
+              <Link
+                className={`nav-link cursive-font ${isActive('/about') ? 'active-link' : 'inactive-link'}`}
+                to="/about"
+              >
                 About
               </Link>
-            </li>
-            <li className="nav-item main-color">
-              <Link className="nav-link cursive-font" to="/contact">
-                Contact
-              </Link>
-            </li>
+            </li>            
           </ul>
         </div>
       </div>

@@ -1,0 +1,179 @@
+#fileContentPage {
+    margin-left: 5vw;
+}
+
+/* ── Password Popup ─────────────────────────────────────────────────────── */
+.popup {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2.5vh 2vw;
+    border-radius: 1rem;
+    border: .2rem solid #7da2a9;
+    background-color: #f7f7f7;
+    width: 27vw;
+    text-align: center;
+    margin: 27vh auto;
+}
+
+/* File name badge inside popup */
+.popup-filename {
+    width: 100%;
+    margin-bottom: 2vh;
+    color: #7da2a9;
+    box-sizing: border-box;
+    /* wrap long filenames */
+    word-break: break-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+    overflow: hidden;
+}
+
+.popup-filename span:last-child {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.popup h3 {
+    margin-left:-10vw;
+}
+
+.popup input {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+    box-sizing: border-box;
+}
+
+/* Submit + Select Another side by side */
+.popup-actions {
+    display: flex;
+    gap: 1vw;
+    margin-top: 1vh;
+    justify-content: center;
+}
+
+.popup-actions button {
+    margin: 0;
+}
+
+.popup .error {
+    color: red;
+    font-size: 0.85rem;
+    margin-top: 1vh;
+    margin-bottom: 0;
+}
+
+/* ── Decrypted Content Area ─────────────────────────────────────────────── */
+#file-content {
+    width: 90vw;
+    margin-top: 3vh;
+}
+
+#fileContentPage h3 {
+    margin-bottom: 1vh;
+}
+
+#fileContentPage h4 {
+    margin-bottom: 3vh;
+    color: #7da2a9;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
+#fileContentPage ul {
+    list-style: none;
+    padding: 0;
+    width: 100%;
+}
+
+#fileContentPage ul li {
+    display: flex;
+    align-items: flex-start;
+    padding: 2vh 1vw;
+    margin: 1vh 0;
+    border-radius: .5rem;
+    border: .2rem solid #7da2a9;
+    background-color: #f7f7f7;
+    gap: 1vw;
+}
+
+/* ── Key — fixed box with vertical scroll ───────────────────────────────── */
+#fileContentPage ul li strong {
+    width: 18vw;
+    min-width: 18vw;
+    max-width: 18vw;
+    height: 10vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    color: #7da2a9;
+    word-break: break-word;
+    padding-right: 0.5vw;
+    scrollbar-width: thin;
+    scrollbar-color: #7da2a9 #f7f7f7;
+}
+
+#fileContentPage ul li strong::-webkit-scrollbar { width: 4px; }
+#fileContentPage ul li strong::-webkit-scrollbar-track { background: #f7f7f7; border-radius: 2px; }
+#fileContentPage ul li strong::-webkit-scrollbar-thumb { background-color: #7da2a9; border-radius: 2px; }
+
+/* ── Value — fixed box with vertical scroll ─────────────────────────────── */
+#fileContentPage ul li span {
+    height: 10vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-break: break-word;
+    padding-left: 0.5vw;
+    border-left: .15rem solid #d0e0e3;
+    scrollbar-width: thin;
+    scrollbar-color: #7da2a9 #f7f7f7;
+}
+
+#fileContentPage ul li span::-webkit-scrollbar { width: 4px; }
+#fileContentPage ul li span::-webkit-scrollbar-track { background: #f7f7f7; border-radius: 2px; }
+#fileContentPage ul li span::-webkit-scrollbar-thumb { background-color: #7da2a9; border-radius: 2px; }
+
+#fileContentPage button {
+    margin: 5px;
+}
+
+/* ── Top bar: filename + action buttons ─────────────────────────────────── */
+#file-content-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2vh;
+    padding-bottom: 1.5vh;
+    border-bottom: .15rem solid #d0e0e3;
+    flex-wrap: wrap;
+    gap: 1vh;
+}
+
+#file-content-topbar h4 {
+    margin: 0;
+    color: #7da2a9;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    max-width: 50vw;
+}
+
+#file-content-actions {
+    display: flex;
+    gap: 0.8vw;
+    flex-wrap: wrap;
+}
+
+#file-content-actions button {
+    margin: 0;
+}
+
+/* ── Sinfo logo icon (replaces 🖼️ emoji) ───────────────────────────────── */
+.sinfo-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    vertical-align: middle;
+    margin-right: 0.3rem;
+    flex-shrink: 0;
+}
