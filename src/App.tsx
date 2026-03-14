@@ -1,5 +1,4 @@
 import Navbar from './common/Navbar';
-import Footer from './common/Footer';
 import SecurePage from './secure-info/SecurePage';
 import CreateFile from './secure-info/CreateFile';
 import FileContentPage from './secure-info/FileContentPage';
