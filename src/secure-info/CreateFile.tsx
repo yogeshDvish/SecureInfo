@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import '../styles/CreateFile.css';
 import '../Global.css';
-import { encryptWithFixedIV, splitter, embedInSinfo, decryptWithFixedIV } from "./ManageCrypto";
+import { encryptWithFixedIV, splitter, embedInSinfo} from "./ManageCrypto";
 import { ReactComponent as SinfoLogo } from '../assets/logo.svg';
 
 // ─── Popup ────────────────────────────────────────────────────────────────────
