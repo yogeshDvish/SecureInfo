@@ -24,6 +24,16 @@ function CreateFile() {
   const editPassword = location.state?.editPassword as string | undefined; // old password passed from FileContentPage
   const isEditMode = !!editRows;
 
+  // ── Password strength validator ───────────────────────────────────────────
+  const validatePasswordStrength = (pwd: string): string | null => {
+    if (pwd.length < 12)           return 'Password must be at least 12 characters.';
+    if (!/[A-Z]/.test(pwd))        return 'Password must include at least one uppercase letter (A-Z).';
+    if (!/[a-z]/.test(pwd))        return 'Password must include at least one lowercase letter (a-z).';
+    if (!/[0-9]/.test(pwd))        return 'Password must include at least one number (0-9).';
+    if (!/[^A-Za-z0-9]/.test(pwd)) return 'Password must include at least one special character (!@#$%^&*...).';
+    return null; // valid
+  };
+
   const [rows, setRows] = useState<{ key: string; value: string }[]>(
     editRows && editRows.length > 0 ? editRows : [{ key: '', value: '' }]
   );
@@ -114,9 +124,12 @@ function CreateFile() {
     // passwordOverride is passed directly from button click to avoid stale state
     const passwordToUse = passwordOverride ?? (passwordStep === 'change' ? saltKey : editPassword ?? saltKey);
 
-    if (passwordStep === 'change') {
-      if (saltKey.length < 12) { alert('Password must be at least 12 characters.'); return; }
-      if (saltKey !== confirmSaltKey) { alert('Passwords do not match.'); return; }
+    // Validate password for normal mode AND change password mode
+    if (!passwordOverride) {
+      const strengthError = validatePasswordStrength(passwordToUse);
+      if (strengthError) { alert(strengthError); return; }
+      if (passwordStep === 'change' && saltKey !== confirmSaltKey) { alert('Passwords do not match.'); return; }
+      if (!isEditMode && saltKey !== confirmSaltKey) { alert('Passwords do not match.'); return; }
     }
 
     setIsExporting(true);
@@ -244,9 +257,24 @@ function CreateFile() {
                   className="bordercolorbtn cursive-font passWordMng"
                   placeholder="New Password (min. 12 characters)"
                   style={{ textAlign: 'start', width: '100%', height: '8vh' }} />
-                <div className="cursive-font" style={{ fontSize: '0.78rem', textAlign: 'right', marginTop: '-0.4vh', marginBottom: '0.4vh',
-                  color: saltKey.length === 0 ? '#aaa' : saltKey.length < 12 ? '#e05252' : '#5a9e6f' }}>
-                  {saltKey.length} / 12 {saltKey.length >= 12 ? '✓' : 'characters minimum'}
+                <div style={{ fontSize: '0.75rem', marginTop: '0.4vh', marginBottom: '0.6vh' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4vw' }}>
+                    {[
+                      { label: '12+ chars', ok: saltKey.length >= 12 },
+                      { label: 'A-Z', ok: /[A-Z]/.test(saltKey) },
+                      { label: 'a-z', ok: /[a-z]/.test(saltKey) },
+                      { label: '0-9', ok: /[0-9]/.test(saltKey) },
+                      { label: '!@#...', ok: /[^A-Za-z0-9]/.test(saltKey) },
+                    ].map(r => (
+                      <span key={r.label} className="cursive-font" style={{
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '1rem',
+                        border: `1px solid ${saltKey.length === 0 ? '#ccc' : r.ok ? '#5a9e6f' : '#e05252'}`,
+                        color: saltKey.length === 0 ? '#aaa' : r.ok ? '#5a9e6f' : '#e05252',
+                        backgroundColor: saltKey.length === 0 ? 'transparent' : r.ok ? '#edf7f0' : '#fdf0f0',
+                      }}>{r.ok ? '✓' : '✗'} {r.label}</span>
+                    ))}
+                  </div>
                 </div>
                 <input type="password" value={confirmSaltKey} onChange={(e) => setConfirmSaltKey(e.target.value)}
                   className="bordercolorbtn cursive-font passWordMng" placeholder="Confirm New Password"
@@ -276,9 +304,24 @@ function CreateFile() {
                   className="bordercolorbtn cursive-font passWordMng"
                   placeholder="Enter Password (min. 12 characters)"
                   style={{ textAlign: 'start', width: '100%', height: '8vh' }} />
-                <div className="cursive-font" style={{ fontSize: '0.78rem', textAlign: 'right', marginTop: '-0.4vh', marginBottom: '0.4vh',
-                  color: saltKey.length === 0 ? '#aaa' : saltKey.length < 12 ? '#e05252' : '#5a9e6f' }}>
-                  {saltKey.length} / 12 {saltKey.length >= 12 ? '✓' : 'characters minimum'}
+                <div style={{ fontSize: '0.75rem', marginTop: '0.4vh', marginBottom: '0.6vh' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4vw' }}>
+                    {[
+                      { label: '12+ chars', ok: saltKey.length >= 12 },
+                      { label: 'A-Z', ok: /[A-Z]/.test(saltKey) },
+                      { label: 'a-z', ok: /[a-z]/.test(saltKey) },
+                      { label: '0-9', ok: /[0-9]/.test(saltKey) },
+                      { label: '!@#...', ok: /[^A-Za-z0-9]/.test(saltKey) },
+                    ].map(r => (
+                      <span key={r.label} className="cursive-font" style={{
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '1rem',
+                        border: `1px solid ${saltKey.length === 0 ? '#ccc' : r.ok ? '#5a9e6f' : '#e05252'}`,
+                        color: saltKey.length === 0 ? '#aaa' : r.ok ? '#5a9e6f' : '#e05252',
+                        backgroundColor: saltKey.length === 0 ? 'transparent' : r.ok ? '#edf7f0' : '#fdf0f0',
+                      }}>{r.ok ? '✓' : '✗'} {r.label}</span>
+                    ))}
+                  </div>
                 </div>
                 <input type="password" value={confirmSaltKey} onChange={(e) => setConfirmSaltKey(e.target.value)}
                   className="bordercolorbtn cursive-font passWordMng" placeholder="Confirm Password"
@@ -288,7 +331,7 @@ function CreateFile() {
                   {confirmSaltKey.length > 0 ? (confirmSaltKey === saltKey ? '✓ Passwords match' : '✗ Passwords do not match') : ''}
                 </div>
                 <div className="cursive-font" style={{ fontSize: '0.78rem', color: '#7da2a9', textAlign: 'center', marginBottom: '1.5vh' }}>
-                  <SinfoLogo className="sinfo-icon" /> Saves as <strong>.sinfo</strong>
+                  <SinfoLogo className="sinfo-icon" /> Saves as <strong>.sinfo</strong> — encrypted data embedded inside an image
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
                   <button className="filledcolorbtn cursive-font" onClick={() => exportData()} disabled={isExporting}>
