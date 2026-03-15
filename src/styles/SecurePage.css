@@ -1,11 +1,11 @@
 #mainDiv {
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    height: 77vh;
+ display: flex;
+ justify-content: space-evenly;
+ align-items: center;
+ height: 77vh;
 }
 
-#createbtn {
+#createbtn, #uploadMain{
     width: 25vw;
     height: 10vh;
     margin: 0;
@@ -27,7 +27,6 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    /* fixed — never moves regardless of content below */
 }
 
 /* ── File info shown below upload box ───────────────────────────────────── */

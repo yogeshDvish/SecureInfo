@@ -1,6 +1,18 @@
-// ManageCrypto.tsx — Web Crypto API (AES-GCM + PBKDF2) + PNG Steganography
+// ManageCrypto.tsx — Web Crypto API (AES-GCM + PBKDF2) + Base64 encoding
+// Replaced PNG steganography with Base64 to avoid Brave/Firefox canvas
+// fingerprinting protection corrupting pixel data.
 
 export const splitter = '¦';
+
+// .sinfo file format:
+//   Line 1:    SINFO:1                          ← magic header + version
+//   Line 2..N: <encrypted entry (base64)>       ← one per row
+//   Last line: <verification token (base64)>    ← password check
+//
+// The entire content is then Base64-encoded before saving so it looks
+// like random gibberish in any text editor.
+
+export const SINFO_MAGIC = 'SINFO:1';
 
 // ─── Key Derivation ───────────────────────────────────────────────────────────
 const deriveKey = async (password: string): Promise<CryptoKey> => {
@@ -19,7 +31,7 @@ const deriveKey = async (password: string): Promise<CryptoKey> => {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const bufferToBase64 = (buffer: ArrayBuffer): string => {
+export const bufferToBase64 = (buffer: ArrayBuffer): string => {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   bytes.forEach((b) => (binary += String.fromCharCode(b)));
@@ -68,144 +80,34 @@ export const decryptWithFixedIV = async (
   }
 };
 
-// ─── PNG Steganography — Embed ────────────────────────────────────────────────
-// Embeds the encrypted text payload into the LSB (least significant bit) of
-// the red channel of each pixel in a canvas. The canvas is then exported as
-// a PNG blob and saved with a .sinfo extension.
-//
-// File structure stored in pixels:
-//   [0..3]   4 pixels  — payload length as 32-bit big-endian integer (1 bit per pixel)
-//   [4..N]   N pixels  — payload bits (1 bit per pixel, LSB of red channel)
-//
-// A 200×200 canvas = 40,000 pixels = 40,000 bits = 5,000 bytes capacity.
-// Typical encrypted payload is well under 4,000 bytes.
-
-export const embedInPng = (payload: string): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    // Fixed canvas size — large enough for any reasonable payload
-    const SIZE = 300;
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-    const ctx = canvas.getContext('2d')!;
-
-    // Fill with a neutral grey background so the image looks intentional
-    ctx.fillStyle = '#e8f0f1';
-    ctx.fillRect(0, 0, SIZE, SIZE);
-
-    // Draw a subtle pattern so it doesn't look like a blank image
-    ctx.fillStyle = '#d0dfe2';
-    for (let i = 0; i < SIZE; i += 20) {
-      ctx.fillRect(i, 0, 1, SIZE);
-      ctx.fillRect(0, i, SIZE, 1);
-    }
-
-    const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
-    const pixels = imageData.data; // RGBA flat array
-
-    // Convert payload string → binary bit string
-    const payloadBytes = new TextEncoder().encode(payload);
-    const payloadLength = payloadBytes.length;
-
-    // Check capacity: need 32 bits for length header + 8 bits per payload byte
-    const bitsNeeded = 32 + payloadLength * 8;
-    const bitsAvailable = SIZE * SIZE; // 1 bit per pixel (LSB of red channel)
-    if (bitsNeeded > bitsAvailable) {
-      reject(new Error(`Payload too large: needs ${bitsNeeded} bits, canvas has ${bitsAvailable}`));
-      return;
-    }
-
-    // Helper: write one bit into pixel[pixelIndex] red channel LSB
-    const writeBit = (pixelIndex: number, bit: number) => {
-      const byteIndex = pixelIndex * 4; // R is at [byteIndex], G at +1, B at +2, A at +3
-      pixels[byteIndex] = (pixels[byteIndex] & 0xFE) | (bit & 1);
-    };
-
-    // Write 32-bit length header (big-endian)
-    for (let i = 0; i < 32; i++) {
-      const bit = (payloadLength >> (31 - i)) & 1;
-      writeBit(i, bit);
-    }
-
-    // Write payload bits
-    let pixelIndex = 32;
-    for (let byteIdx = 0; byteIdx < payloadLength; byteIdx++) {
-      for (let bitIdx = 7; bitIdx >= 0; bitIdx--) {
-        const bit = (payloadBytes[byteIdx] >> bitIdx) & 1;
-        writeBit(pixelIndex++, bit);
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error('Failed to create PNG blob'));
-    }, 'image/png');
-  });
+// ─── Embed — Build .sinfo file content ───────────────────────────────────────
+// Takes the assembled payload (encrypted lines joined by \n) and wraps it
+// with a magic header, then Base64-encodes the whole thing.
+// The result is a string that looks like random gibberish — saved as .sinfo.
+export const embedInSinfo = (payload: string): Blob => {
+  const content = `${SINFO_MAGIC}\n${payload}`;
+  // Base64-encode the entire content so it looks like gibberish in any editor
+  const encoded = window.btoa(unescape(encodeURIComponent(content)));
+  return new Blob([encoded], { type: 'application/octet-stream' });
 };
 
-// ─── PNG Steganography — Extract ──────────────────────────────────────────────
-// Reads the LSB of the red channel of each pixel to reconstruct the payload.
-// Accepts the raw ArrayBuffer of the .sinfo file (which is a valid PNG).
+// ─── Extract — Read .sinfo file content ──────────────────────────────────────
+// Reads the file as text, Base64-decodes it, verifies the magic header,
+// and returns the raw payload string for decryption.
+export const extractFromSinfo = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+  const raw = new TextDecoder().decode(arrayBuffer).trim();
 
-export const extractFromPng = (arrayBuffer: ArrayBuffer): string => {
-  // Parse PNG manually to extract pixel data without a canvas
-  // We use an OffscreenCanvas or a regular canvas via a Blob URL
-  // Since this runs synchronously in our flow we return a Promise instead
-  throw new Error('Use extractFromPngAsync instead');
-};
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(escape(window.atob(raw)));
+  } catch {
+    throw new Error('Invalid .sinfo file — could not decode content.');
+  }
 
-export const extractFromPngAsync = (arrayBuffer: ArrayBuffer): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([arrayBuffer], { type: 'image/png' });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
+  if (!decoded.startsWith(SINFO_MAGIC)) {
+    throw new Error('Invalid .sinfo file — missing header.');
+  }
 
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-
-      const pixels = ctx.getImageData(0, 0, img.width, img.height).data;
-
-      const readBit = (pixelIndex: number): number => {
-        return pixels[pixelIndex * 4] & 1; // LSB of red channel
-      };
-
-      // Read 32-bit length header
-      let payloadLength = 0;
-      for (let i = 0; i < 32; i++) {
-        payloadLength = (payloadLength << 1) | readBit(i);
-      }
-
-      if (payloadLength <= 0 || payloadLength > 100_000) {
-        reject(new Error('Invalid or corrupted .sinfo file'));
-        return;
-      }
-
-      // Read payload bytes
-      const payloadBytes = new Uint8Array(payloadLength);
-      let pixelIndex = 32;
-      for (let byteIdx = 0; byteIdx < payloadLength; byteIdx++) {
-        let byte = 0;
-        for (let bitIdx = 7; bitIdx >= 0; bitIdx--) {
-          byte |= (readBit(pixelIndex++) << bitIdx);
-        }
-        payloadBytes[byteIdx] = byte;
-      }
-
-      resolve(new TextDecoder().decode(payloadBytes));
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image from .sinfo file'));
-    };
-
-    img.src = url;
-  });
+  // Strip the magic header line and return the payload
+  return decoded.slice(SINFO_MAGIC.length + 1); // +1 for \n
 };

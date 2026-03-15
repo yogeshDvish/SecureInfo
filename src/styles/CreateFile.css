@@ -1,8 +1,7 @@
-#mainCreateDiv{
-    height: 100%;
-    align-items: top;
-    justify-content: center;
-    justify-items: center;
+#mainCreateDiv {
+    min-height: 100%;
+    width: 100%;
+    padding: 0;
 }
 
 .modal {
@@ -33,8 +32,8 @@
   button {
     margin: 5px;
   }
-  
-  /* ── Sinfo logo icon ────────────────────────────────────────────────────── */
+
+/* ── Sinfo logo icon ────────────────────────────────────────────────────── */
 .sinfo-icon {
     width: 1.2rem;
     height: 1.2rem;
