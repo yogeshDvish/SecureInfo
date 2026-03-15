@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { decryptWithFixedIV, splitter, extractFromPngAsync } from './ManageCrypto';
-import '../styles/FileContentPage.css';
+import { decryptWithFixedIV, splitter, extractFromSinfo } from './ManageCrypto';
 import '../Global.css';
 import { ReactComponent as SinfoLogo } from '../assets/logo.svg';
 
@@ -12,7 +11,6 @@ function FileContentPage() {
 
   const [currentFileName, setCurrentFileName] = useState<string>(location.state?.fileName || '');
   const [currentFileBuffer, setCurrentFileBuffer] = useState<ArrayBuffer | null>(location.state?.fileBuffer || null);
-
   const [isPopupVisible, setIsPopupVisible] = useState(true);
   const [error, setError] = useState('');
   const [decryptedContent, setDecryptedContent] = useState<{ key: string; value: string }[]>([]);
@@ -23,17 +21,13 @@ function FileContentPage() {
 
   const getPayload = async (): Promise<string> => {
     if (!isSinfoFile(currentFileName) || !currentFileBuffer) {
-      setError('Invalid file. Please upload a .sinfo file.');
-      return '';
+      setError('Invalid file. Please upload a .sinfo file.'); return '';
     }
-    return await extractFromPngAsync(currentFileBuffer);
+    return await extractFromSinfo(currentFileBuffer);
   };
 
-  const decryptFileContent = async (
-    payload: string,
-    password: string
-  ): Promise<{ key: string; value: string }[]> => {
-    const lines = payload.split('\n').filter((l) => l.trim() !== '');
+  const decryptFileContent = async (payload: string, password: string) => {
+    const lines = payload.split('\n').filter(l => l.trim() !== '');
     const dataLines = lines.slice(0, lines.length - 1);
     const results: { key: string; value: string }[] = [];
     for (const line of dataLines) {
@@ -47,26 +41,19 @@ function FileContentPage() {
 
   const handleSubmit = async () => {
     if (!saltKey) { setError('Please provide a password.'); return; }
-    setIsLoading(true);
-    setError('');
+    setIsLoading(true); setError('');
     try {
       const payload = await getPayload();
       if (!payload) { setIsLoading(false); return; }
-      const lines = payload.split('\n').filter((l: string) => l.trim() !== '');
-      const verificationToken = lines[lines.length - 1];
-      const decryptedToken = await decryptWithFixedIV(verificationToken, saltKey);
+      const lines = payload.split('\n').filter(l => l.trim() !== '');
+      const token = lines[lines.length - 1];
+      const decryptedToken = await decryptWithFixedIV(token, saltKey);
       if (decryptedToken === saltKey) {
-        const decrypted = await decryptFileContent(payload, saltKey);
-        setDecryptedContent(decrypted);
+        setDecryptedContent(await decryptFileContent(payload, saltKey));
         setIsPopupVisible(false);
-      } else {
-        setError('Invalid password. Please try again.');
-      }
-    } catch {
-      setError('Invalid password or corrupted file.');
-    } finally {
-      setIsLoading(false);
-    }
+      } else { setError('Invalid password. Please try again.'); }
+    } catch { setError('Invalid password or corrupted file.'); }
+    finally { setIsLoading(false); }
   };
 
   const handleSelectAnother = () => {
@@ -79,92 +66,97 @@ function FileContentPage() {
     if (!isSinfoFile(file.name)) { setError('Invalid file type. Please upload a .sinfo file.'); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setCurrentFileName(file.name);
-      setCurrentFileBuffer(ev.target?.result as ArrayBuffer);
-      setSaltKey('');
-      setError('');
-      setDecryptedContent([]);
-      setIsPopupVisible(true);
+      setCurrentFileName(file.name); setCurrentFileBuffer(ev.target?.result as ArrayBuffer);
+      setSaltKey(''); setError(''); setDecryptedContent([]); setIsPopupVisible(true);
     };
     reader.readAsArrayBuffer(file);
   };
 
-  const handleBack = () => navigate('/');
-
-  // ── Edit — pass saltKey so CreateFile can use old password ───────────────
   const handleEdit = () => {
-    const filenameWithoutExt = currentFileName.replace(/\.sinfo$/i, '');
     navigate('/create-file', {
-      state: {
-        editRows: decryptedContent,
-        editFilename: filenameWithoutExt,
-        editPassword: saltKey,       // carry old password
-      }
+      state: { editRows: decryptedContent, editFilename: currentFileName.replace(/\.sinfo$/i, ''), editPassword: saltKey }
     });
   };
 
   return (
-    <div id="fileContentPage">
-
+    <div className="container py-4">
       <input ref={fileInputRef} type="file" accept=".sinfo" style={{ display: 'none' }} onChange={handleFileChange} />
 
       {/* ── Password popup ── */}
       {isPopupVisible && (
-        <div className="popup">
-          <div className="popup-filename cursive-font">
-            <SinfoLogo className="sinfo-icon" />
-            <span title={currentFileName}>{currentFileName}</span>
+        <div className="row justify-content-center">
+          <div className="col-12 col-sm-9 col-md-7 col-lg-5">
+            <div className="p-4 text-center" style={{ borderRadius: '1rem', border: '.2rem solid #7da2a9', backgroundColor: '#f7f7f7' }}>
+
+              {/* Filename badge */}
+              <div className="d-flex align-items-center justify-content-center gap-2 mb-3 cursive-font"
+                style={{ color: '#7da2a9', wordBreak: 'break-all', fontSize: '0.9rem' }}>
+                <SinfoLogo style={{ width: '1.2rem', height: '1.2rem', flexShrink: 0 }} />
+                <span>{currentFileName}</span>
+              </div>
+
+              <h5 className="cursive-font mb-3">Enter Password</h5>
+              <input className="form-control cursive-font mb-3" type="password" placeholder="Password"
+                value={saltKey} onChange={(e) => setSaltKey(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()} />
+
+              <div className="d-flex flex-wrap gap-2 justify-content-center">
+                <button className="btn cursive-font text-white" style={{ backgroundColor: '#7da2a9', borderRadius: '.5rem' }}
+                  onClick={handleSubmit} disabled={isLoading}>{isLoading ? 'Decrypting...' : 'Submit'}</button>
+                <button className="btn cursive-font" style={{ border: '.2rem solid #7da2a9', color: '#7da2a9', borderRadius: '.5rem' }}
+                  onClick={handleSelectAnother} disabled={isLoading}>Select Another File</button>
+              </div>
+
+              {error && <p className="text-danger cursive-font mt-2 mb-0" style={{ fontSize: '0.85rem' }}>{error}</p>}
+            </div>
           </div>
-          <h3 className="cursive-font">Enter Password</h3>
-          <input
-            className="bordercolorbtn cursive-font"
-            type="password"
-            placeholder="Password"
-            value={saltKey}
-            onChange={(e) => setSaltKey(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          />
-          <div className="popup-actions">
-            <button className="filledcolorbtn cursive-font" onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? 'Decrypting...' : 'Submit'}
-            </button>
-            <button className="bordercolorbtn cursive-font" onClick={handleSelectAnother} disabled={isLoading}>
-              Select Another File
-            </button>
-          </div>
-          {error && <p className="error">{error}</p>}
         </div>
       )}
 
       {/* ── Decrypted content ── */}
       {!isPopupVisible && (
-        <div id="file-content">
-
-          {/* ── Top bar: filename + buttons ── */}
-          <div id="file-content-topbar">
-            <h4 className="cursive-font"><SinfoLogo className="sinfo-icon" /> {currentFileName}</h4>
-            <div id="file-content-actions">
-              <button className="filledcolorbtn cursive-font" onClick={handleEdit}>✏️ Edit</button>
-              <button className="bordercolorbtn cursive-font" onClick={handleSelectAnother}>📂 Select Another</button>
-              <button className="bordercolorbtn cursive-font" onClick={handleBack}>← Back</button>
+        <div>
+          {/* Top bar */}
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-3"
+            style={{ borderBottom: '.15rem solid #d0e0e3' }}>
+            <h6 className="cursive-font m-0 d-flex align-items-center gap-2" style={{ color: '#7da2a9', wordBreak: 'break-all' }}>
+              <SinfoLogo style={{ width: '1.2rem', height: '1.2rem', flexShrink: 0 }} />
+              {currentFileName}
+            </h6>
+            <div className="d-flex flex-wrap gap-2">
+              <button className="btn btn-sm cursive-font text-white" style={{ backgroundColor: '#7da2a9', borderRadius: '.5rem' }} onClick={handleEdit}>✏️ Edit</button>
+              <button className="btn btn-sm cursive-font" style={{ border: '.2rem solid #7da2a9', color: '#7da2a9', borderRadius: '.5rem' }} onClick={handleSelectAnother}>📂 Select Another</button>
+              <button className="btn btn-sm cursive-font" style={{ border: '.2rem solid #7da2a9', color: '#7da2a9', borderRadius: '.5rem' }} onClick={() => navigate('/')}>← Back</button>
             </div>
           </div>
 
+          {/* Content list — same card style as CreateFile rows */}
           {decryptedContent.length > 0 ? (
-            <ul>
+            <div>
               {decryptedContent.map((item, index) => (
-                <li key={index}>
-                  <strong>{item.key}</strong>
-                  <span>{item.value}</span>
-                </li>
+                <div key={index} className="mb-3 p-3"
+                  style={{ border: '.15rem solid #d0e0e3', borderRadius: '.8rem', backgroundColor: '#f7f7f7' }}>
+                  {/* Key — styled like header input */}
+                  <div className="cursive-font w-100 mb-2 px-3 py-2"
+                    style={{ border: '.2rem solid #7da2a9', borderRadius: '.5rem', backgroundColor: '#f7f7f7',
+                      color: '#7da2a9', fontWeight: 600, wordBreak: 'break-word', display: 'block' }}>
+                    {item.key}
+                  </div>
+                  {/* Value — styled like data textarea */}
+                  <div className="cursive-font w-100 px-3 py-2"
+                    style={{ border: '.2rem solid #7da2a9', borderRadius: '.5rem', backgroundColor: '#f7f7f7',
+                      color: '#2c2c2c', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
+                      minHeight: '80px', overflowY: 'auto', maxHeight: '20vh', display: 'block' }}>
+                    {item.value}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p>No decrypted content available.</p>
+            <p className="cursive-font text-muted">No decrypted content available.</p>
           )}
         </div>
       )}
-
     </div>
   );
 }

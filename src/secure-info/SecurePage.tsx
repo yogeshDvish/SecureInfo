@@ -9,7 +9,6 @@ function SecurePage() {
 
   const handleCreateFileClick = () => navigate('/create-file');
 
-  // Reads .sinfo file as ArrayBuffer and navigates to FileContentPage
   const navigateToFileContent = (file: File) => {
     if (!file.name.toLowerCase().endsWith('.sinfo')) {
       alert('Invalid file type. Please upload a .sinfo file.');
@@ -46,15 +45,17 @@ function SecurePage() {
   return (
     <>
       <div id="mainDiv">
-
-        {/* ── Create File button ── */}
         <div>
-          <button className="main-color filledcolorbtn cursive-font" id="createbtn" type="button" onClick={handleCreateFileClick}>
+          <button
+            className="main-color filledcolorbtn cursive-font"
+            id="createbtn"
+            type="button"
+            onClick={handleCreateFileClick}
+          >
             Create File
           </button>
         </div>
 
-        {/* ── Upload area ── */}
         <div id="uploadWrapper">
           <div
             className={`cursive-font bordercolorbtn ${isDragging ? 'dragging' : ''}`}
@@ -77,7 +78,6 @@ function SecurePage() {
             />
           </div>
         </div>
-
       </div>
     </>
   );
